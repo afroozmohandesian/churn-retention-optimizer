@@ -1,0 +1,23 @@
+Customers analysed : 30
+Budget             : €500
+Success rate       : 50%
+
+                           Selected Customers  Total Spending (€)  Expected Net Benefit (€)   ROI  Share of Optimum
+Strategy                                                                                                           
+Random                                    5.0               462.0                    566.32  1.23              0.19
+Highest Churn Probability                 5.0               481.0                   1047.68  2.18              0.35
+Value Density (Greedy)                    6.0               467.0                   3001.39  6.43              1.00
+Knapsack Optimization                     6.0               467.0                   3001.39  6.43              1.00
+
+Optimal strategies : Value Density (Greedy), Knapsack Optimization
+Knapsack portfolio : C001, C004, C007, C021, C024, C030
+
+Monte Carlo risk (realised net benefit):
+                           Mean Net Benefit (€)  5th Percentile (€)  Probability of Loss
+Strategy                                                                                
+Random                                  557.334              -462.0                0.338
+Highest Churn Probability              1045.691              -481.0                0.162
+Value Density (Greedy)                 2995.792              -467.0                0.074
+Knapsack Optimization                  2995.792              -467.0                0.074
+
+Tables and figures written to outputs/

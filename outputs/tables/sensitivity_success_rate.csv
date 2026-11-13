@@ -1,0 +1,4 @@
+Assumed Success Rate,Budget (€),Selected Customers,Spending (€),Expected Net Benefit (€),Selected IDs
+0.3,500,6,467.0,1614.0339999999999,"C001, C004, C007, C021, C024, C030"
+0.5,500,6,467.0,3001.39,"C001, C004, C007, C021, C024, C030"
+0.7,500,6,467.0,4388.746,"C001, C004, C007, C021, C024, C030"

@@ -1,0 +1,5 @@
+Strategy,Mean Net Benefit (€),Std Dev (€),5th Percentile (€),Median (€),95th Percentile (€),Probability of Loss
+Random,557.3342,911.4044894143831,-462.0,447.0,1963.0,0.3383
+Highest Churn Probability,1045.691,928.9995718725892,-481.0,968.0,2553.0,0.1625
+Value Density (Greedy),2995.7925,1933.0639604708574,-467.0,2794.0,6133.0,0.0744
+Knapsack Optimization,2995.7925,1933.0639604708574,-467.0,2794.0,6133.0,0.0744
