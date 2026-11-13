@@ -25,3 +25,4 @@ htmlcov/
 
 # Ad-hoc scenario runs (reference outputs are committed)
 outputs/my_scenario*/
+outputs/target_list.csv

@@ -8,6 +8,8 @@ from odin.sensitivity import budget_sensitivity, sensitivity_grid, success_rate_
 from odin.simulation import simulate_net_benefit, summarise_simulations
 from odin.synthetic import generate_customers
 
+from .conftest import ROOT
+
 
 def test_sensitivity_matches_reference(raw):
     s = success_rate_sensitivity(raw, [0.3, 0.5, 0.7], 500)
@@ -107,3 +109,35 @@ def test_segment_allocation(customers):
     table = segment_allocation(seg, ids, "Group")
     assert table["Selected"].sum() == len(ids)
     assert abs(table["Share of Spend"].sum() - 1) < 1e-9
+
+
+def test_cli_target_list(tmp_path):
+    import pandas as pd
+
+    out = tmp_path / "targets.csv"
+    data = ROOT / "data" / "synthetic" / "customer_base_5000.csv"
+    args = ["target", "--data", str(data), "--budget", "5000", "--out", str(out)]
+    assert main(args) == 0
+    single = pd.read_csv(out)
+    assert single["Offer_Cost"].sum() <= 5000 and single["Customer_ID"].is_unique
+
+    assert (
+        main(
+            [
+                *args,
+                "--multi-offer",
+                "--max-contacts",
+                "300",
+                "--segment",
+                "Region",
+                "--max-share",
+                "DACH=0.2",
+            ]
+        )
+        == 0
+    )
+    multi = pd.read_csv(out)
+    assert len(multi) <= 300
+    assert multi.loc[multi["Region"] == "DACH", "Offer_Cost"].sum() <= 0.2 * 5000 + 1e-6
+
+    assert main([*args, "--segment", "Region", "--min-contacts", "Nordics=100000"]) == 2

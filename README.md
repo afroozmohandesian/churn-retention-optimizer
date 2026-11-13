@@ -250,6 +250,12 @@ python -m odin analyze --data data/synthetic/customer_base_5000.csv --budget 250
 # Your own assumptions
 python -m odin analyze --budget 800 --success-rate 0.35 --out outputs/my_scenario
 
+# Target list for the campaign team: best offer per subscriber, capacity and a regional cap
+python -m odin target --data data/synthetic/customer_base_5000.csv --budget 25000 --multi-offer --max-contacts 1500 --segment Region --max-share DACH=0.25 --out outputs/target_list.csv
+
+# Target list from per-subscriber uplift instead of a constant success rate
+python -m odin target --uplift --budget 25000 --out outputs/target_list.csv
+
 # Regenerate the synthetic subscriber base
 python -m odin generate --n 5000 --seed 7 --out data/synthetic/customer_base_5000.csv
 ```
