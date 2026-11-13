@@ -93,3 +93,16 @@ def test_invalid_offer():
         Offer("Bad", success_rate=1.5)
     with pytest.raises(ValueError):
         build_offer_menu(pd.DataFrame(), ())
+
+
+def test_rescale_success_rates(base):
+    from odin.offers import rescale_success_rates
+
+    menu = build_offer_menu(base)
+    same = rescale_success_rates(menu, 0.5)
+    assert np.allclose(same["Offer_Net_Benefit"], menu["Offer_Net_Benefit"])
+    higher = rescale_success_rates(menu, 0.7)
+    assert np.allclose(higher["Offer_Success_Rate"], (menu["Offer_Success_Rate"] * 1.4).clip(upper=1))
+    assert (higher["Offer_Net_Benefit"] >= menu["Offer_Net_Benefit"] - 1e-9).all()
+    with pytest.raises(ValueError):
+        rescale_success_rates(menu, 1.5)

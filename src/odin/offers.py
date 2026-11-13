@@ -98,6 +98,23 @@ def build_offer_menu(data: pd.DataFrame, catalogue: tuple[Offer, ...] = DEFAULT_
     return menu.sort_values(["Customer_ID", "Offer_Cost"], kind="mergesort").reset_index(drop=True)
 
 
+def rescale_success_rates(menu: pd.DataFrame, reference_rate: float, reference: float = 0.5) -> pd.DataFrame:
+    """Scale every offer's success rate by ``reference_rate / reference``.
+
+    Keeps the catalogue's relative effectiveness while letting one scenario
+    input move all offers together (the default catalogue's "Two free months"
+    offer has ``reference = 0.5``). Rates are capped at 1.
+    """
+    if not 0.0 <= reference_rate <= 1.0:
+        raise ValueError("reference_rate must be between 0 and 1")
+    out = menu.copy()
+    retained = out["Offer_Net_Benefit"] + out["Offer_Cost"]
+    new_rate = (out["Offer_Success_Rate"] * reference_rate / reference).clip(upper=1.0)
+    out["Offer_Net_Benefit"] = retained / out["Offer_Success_Rate"] * new_rate - out["Offer_Cost"]
+    out["Offer_Success_Rate"] = new_rate
+    return out
+
+
 def _positive_groups(menu: pd.DataFrame):
     positive = menu.loc[menu["Offer_Net_Benefit"] > 0]
     return [

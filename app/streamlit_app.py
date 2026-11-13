@@ -23,7 +23,7 @@ from odin.constraints import (
     menu_from_single_offer,
 )
 from odin.evaluation import compare_strategies, run_strategies
-from odin.offers import build_offer_menu, multi_offer_selection, offer_mix
+from odin.offers import build_offer_menu, multi_offer_selection, offer_mix, rescale_success_rates
 from odin.synthetic import generate_customer_base
 from odin.uplift import FEATURES, TLearner, add_uplift_value, simulate_campaign_experiment
 
@@ -115,12 +115,11 @@ if effect == "Constant success rate":
 else:
     economics = add_uplift_value(data, uplift_model().predict(data))
 
-menu = build_offer_menu(data) if multi_offer else menu_from_single_offer(economics)
 if multi_offer:
-    # Rescale the catalogue's success rates so the "Two free months" offer equals the slider value.
-    menu["Offer_Net_Benefit"] = (menu["Offer_Net_Benefit"] + menu["Offer_Cost"]) * success_rate / 0.5 - menu[
-        "Offer_Cost"
-    ]
+    # Scale the catalogue so the "Two free months" offer matches the slider value.
+    menu = rescale_success_rates(build_offer_menu(data), success_rate)
+else:
+    menu = menu_from_single_offer(economics)
 
 constraints = CampaignConstraints(
     max_contacts=max_contacts, segment_column=segment_column, max_spend_share=caps, min_contacts=minimums
