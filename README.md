@@ -10,7 +10,7 @@ Project Odin replaces "contact the riskiest customers first" with a provably opt
 [![CI](https://github.com/afroozmohandesian/churn-retention-optimizer/actions/workflows/ci.yml/badge.svg)](https://github.com/afroozmohandesian/churn-retention-optimizer/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![pandas](https://img.shields.io/badge/pandas-2.x-150458?logo=pandas&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-99%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-101%20passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 </div>
@@ -224,6 +224,8 @@ The estimated uplift correlates 0.96 with the truth, and its Qini coefficient (6
 
 `app/streamlit_app.py` combines all of the above. You can change the dataset, budget, offer-effect assumption, offer catalogue and constraints, and see the optimal portfolio, its segment allocation, the budget frontier and a downloadable target list.
 
+<p align="center"><img src="docs/images/scenario_explorer.png" width="90%" alt="Scenario explorer"></p>
+
 ```bash
 pip install -e ".[app]"
 streamlit run app/streamlit_app.py
@@ -306,7 +308,7 @@ churn-retention-optimizer/
 │   ├── benchmark.py                # heuristic gap and solver runtime
 │   ├── extensions.py               # multi-offer, constraint and uplift results
 │   └── build_report_notebook.py    # report notebook kept as reviewable source
-├── tests/                          # 99 pytest tests
+├── tests/                          # 101 pytest tests
 ├── outputs/
 │   ├── report/                     # figures and tables from the report notebook
 │   ├── customer_base_5000/         # CLI run on the full base
@@ -331,7 +333,7 @@ The full-base churn score is generated from the behavioural drivers **with model
 
 ## Quality assurance
 
-- **99 tests** (`pytest`), lint and format checks (`ruff`), and CI on Python 3.10, 3.11 and 3.12.
+- **101 tests** (`pytest`), lint and format checks (`ruff`), and CI on Python 3.10, 3.11 and 3.12.
 - The DP solver is checked against **exhaustive search** on 25 random instances, plus a counter-example where greedy is sub-optimal.
 - Budget feasibility, **monotone sensitivity**, **Monte Carlo convergence** to the analytical expectation, data-validation rules and the CLI end to end are all tested.
 - The report notebook is generated from [`scripts/build_report_notebook.py`](scripts/build_report_notebook.py) and calls the same package as the CLI, so the numbers always agree.

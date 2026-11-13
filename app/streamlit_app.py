@@ -33,6 +33,12 @@ DATASETS = {
     "Pilot cohort (30)": ROOT / "data" / "raw" / "project_odin_customers.csv",
 }
 SEGMENT_COLUMNS = ["Plan", "Contract", "Region", "Acquisition_Channel"]
+SHORT_NAMES = {
+    "Random": "1 · Random",
+    "Highest Churn Probability": "2 · Risk-first",
+    "Value Density (Greedy)": "3 · Greedy",
+    "Knapsack Optimization": "4 · Knapsack",
+}
 
 st.set_page_config(page_title="Project Odin · Scenario explorer", layout="wide")
 
@@ -163,7 +169,7 @@ with tab_compare:
     else:
         table = compare_strategies(economics, run_strategies(economics, int(budget)))
         st.bar_chart(
-            table["Expected Net Benefit (€)"].sort_values(),
+            table["Expected Net Benefit (€)"].rename(SHORT_NAMES),
             horizontal=True,
             x_label="",
             y_label="Expected net benefit (€)",
