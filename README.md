@@ -7,7 +7,7 @@
 **Which customers should get a retention offer when the budget is limited?**
 Project Odin turns churn-risk scores into an optimal campaign by solving a 0/1 Knapsack problem.
 
-[![CI](https://github.com/afroozmohandesian/project-odin/actions/workflows/ci.yml/badge.svg)](https://github.com/afroozmohandesian/project-odin/actions/workflows/ci.yml)
+[![CI](https://github.com/afroozmohandesian/churn-retention-optimizer/actions/workflows/ci.yml/badge.svg)](https://github.com/afroozmohandesian/churn-retention-optimizer/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![pandas](https://img.shields.io/badge/pandas-2.x-150458?logo=pandas&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -129,8 +129,8 @@ The model is solved exactly with **dynamic programming** in `O(n × B)` time. Th
 ## Quick start
 
 ```bash
-git clone https://github.com/afroozmohandesian/project-odin.git
-cd project-odin
+git clone https://github.com/afroozmohandesian/churn-retention-optimizer.git
+cd churn-retention-optimizer
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 ```
@@ -177,7 +177,7 @@ The `Makefile` wraps the common tasks: `make install`, `make test`, `make analyz
 ## Repository structure
 
 ```text
-project-odin/
+churn-retention-optimizer/
 ├── data/
 │   ├── raw/project_odin_customers.csv        # 30-customer reference dataset
 │   ├── synthetic/odin_customers_1000.csv     # 1,000-customer scale dataset (reproducible)
