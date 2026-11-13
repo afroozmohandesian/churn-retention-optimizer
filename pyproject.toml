@@ -37,3 +37,7 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
 ignore = ["B905"]
+
+[tool.ruff.lint.per-file-ignores]
+# Notebook source cells and Markdown are embedded as long string literals.
+"scripts/build_report_notebook.py" = ["E501"]

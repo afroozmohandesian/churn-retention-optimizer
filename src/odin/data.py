@@ -42,6 +42,9 @@ def validation_report(df: pd.DataFrame) -> dict[str, bool]:
 def validate_customers(df: pd.DataFrame) -> pd.DataFrame:
     """Coerce types, run every structural check and return a clean copy.
 
+    Required columns come first; any additional descriptive columns (plan,
+    region, tenure, ...) are kept unchanged after them.
+
     Raises
     ------
     DataValidationError
@@ -51,7 +54,8 @@ def validate_customers(df: pd.DataFrame) -> pd.DataFrame:
     if missing:
         raise DataValidationError(f"Missing required columns: {missing}")
 
-    clean = df[REQUIRED_COLUMNS].copy()
+    extra = [c for c in df.columns if c not in REQUIRED_COLUMNS]
+    clean = df[REQUIRED_COLUMNS + extra].copy()
     clean["Customer_ID"] = clean["Customer_ID"].astype(str)
     try:
         for column in REQUIRED_COLUMNS[1:]:

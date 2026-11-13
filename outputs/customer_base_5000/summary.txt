@@ -1,0 +1,23 @@
+Customers analysed : 5000
+Budget             : €25,000
+Success rate       : 50%
+
+                           Selected Customers  Total Spending (€)  Expected Net Benefit (€)   ROI  Share of Optimum
+Strategy                                                                                                           
+Random                                  769.0             24989.0                    901.42  0.04              0.04
+Highest Churn Probability               843.0             24995.0                  20438.38  0.82              0.87
+Value Density (Greedy)                  841.0             25000.0                  23405.39  0.94              1.00
+Knapsack Optimization                   841.0             25000.0                  23405.39  0.94              1.00
+
+Optimal strategies : Value Density (Greedy), Knapsack Optimization
+Knapsack portfolio : AUR-0003, AUR-0005, AUR-0010, AUR-0021, AUR-0024, AUR-0033, AUR-0039, AUR-0040, AUR-0049, AUR-0056, AUR-0062, AUR-0065, AUR-0067, AUR-0075, AUR-0102 ...
+
+Monte Carlo risk (realised net benefit):
+                           Mean Net Benefit (€)  5th Percentile (€)  Probability of Loss
+Strategy                                                                                
+Random                                  909.543            -2953.05                0.361
+Highest Churn Probability             20469.888            16150.90                0.000
+Value Density (Greedy)                23415.427            18376.95                0.000
+Knapsack Optimization                 23415.427            18376.95                0.000
+
+Tables and figures written to outputs/customer_base_5000/

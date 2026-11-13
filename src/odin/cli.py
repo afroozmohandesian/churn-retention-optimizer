@@ -1,7 +1,7 @@
 """Command-line interface.
 
 python -m odin analyze --data data/raw/project_odin_customers.csv --budget 500
-python -m odin generate --n 1000 --out data/synthetic/odin_customers_1000.csv
+python -m odin generate --n 5000 --out data/synthetic/customer_base_5000.csv
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ from pathlib import Path
 from odin.config import ScenarioConfig
 from odin.data import load_customers
 from odin.pipeline import analyze, export, summary_text
-from odin.synthetic import generate_customers
+from odin.synthetic import generate_customer_base, generate_customers
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -33,17 +33,29 @@ def _parser() -> argparse.ArgumentParser:
     a.add_argument("--no-figures", action="store_true")
 
     g = sub.add_parser("generate", help="Generate a synthetic customer dataset.")
-    g.add_argument("--n", default=1_000, type=int)
-    g.add_argument("--seed", default=2024, type=int)
-    g.add_argument("--out", default=Path("data/synthetic/odin_customers_1000.csv"), type=Path)
+    g.add_argument(
+        "--profile",
+        choices=["base", "simple"],
+        default="base",
+        help="'base': rich subscriber base with segments; 'simple': core columns only.",
+    )
+    g.add_argument("--n", default=5_000, type=int)
+    g.add_argument("--seed", default=None, type=int)
+    g.add_argument("--out", default=Path("data/synthetic/customer_base_5000.csv"), type=Path)
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
+    import matplotlib
+
+    matplotlib.use("Agg")  # headless rendering for CLI runs
     args = _parser().parse_args(argv)
 
     if args.command == "generate":
-        df = generate_customers(args.n, seed=args.seed)
+        if args.profile == "base":
+            df = generate_customer_base(args.n, seed=7 if args.seed is None else args.seed)
+        else:
+            df = generate_customers(args.n, seed=2024 if args.seed is None else args.seed)
         args.out.parent.mkdir(parents=True, exist_ok=True)
         df.to_csv(args.out, index=False)
         print(f"Wrote {len(df):,} synthetic customers to {args.out}")

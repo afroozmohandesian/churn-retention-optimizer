@@ -72,3 +72,38 @@ def test_cli(tmp_path, capsys):
         == 0
     )
     assert "Knapsack Optimization" in capsys.readouterr().out
+
+
+def test_customer_base_generator():
+    from odin import validate_customers
+    from odin.synthetic import generate_customer_base
+
+    base = generate_customer_base(2000, seed=7)
+    clean = validate_customers(base)
+    assert {"Plan", "Region", "Contract", "Tenure_Months"} <= set(clean.columns)
+    assert 0.15 < base["Actual_Churn"].mean() < 0.45
+    assert base.equals(generate_customer_base(2000, seed=7))
+
+
+def test_score_diagnostics():
+    import pandas as pd
+
+    from odin.evaluation import score_diagnostics
+
+    perfect = pd.DataFrame(
+        {"Actual_Churn": [0, 0, 1, 1], "Predicted_Churn_Probability": [0.1, 0.2, 0.8, 0.9]}
+    )
+    summary, table = score_diagnostics(perfect, bins=2)
+    assert summary["ROC AUC"] == 1.0
+    assert table["Customers"].sum() == 4
+
+
+def test_segment_allocation(customers):
+    from odin import knapsack_selection
+    from odin.evaluation import segment_allocation
+
+    seg = customers.assign(Group=["A" if i % 2 else "B" for i in range(len(customers))])
+    ids = knapsack_selection(seg, 500)
+    table = segment_allocation(seg, ids, "Group")
+    assert table["Selected"].sum() == len(ids)
+    assert abs(table["Share of Spend"].sum() - 1) < 1e-9

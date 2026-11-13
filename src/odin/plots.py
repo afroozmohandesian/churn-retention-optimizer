@@ -5,12 +5,9 @@ from __future__ import annotations
 from collections.abc import Mapping
 from pathlib import Path
 
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
-import numpy as np  # noqa: E402
-import pandas as pd  # noqa: E402
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 
 PALETTE = ["#9AA5B1", "#E07A5F", "#F2CC8F", "#3D5A80"]  # random, churn, greedy, knapsack
 

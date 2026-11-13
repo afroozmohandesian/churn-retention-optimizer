@@ -69,7 +69,21 @@ realised = Σ churn_i · saved_i · CLV_i − Σ C_i
 
 The simulated mean converges to `Σ ENB_i`. The distribution adds the spread, the percentiles and `P(realised < 0)`. Offer costs are assumed to be incurred whether or not the customer would have churned.
 
-## 7. What a production version needs
+## 7. Churn-score diagnostics (full base)
+
+`odin.evaluation.score_diagnostics` reports:
+
+- **ROC AUC**, computed with the rank-based Mann–Whitney formula.
+- **Brier score.**
+- **A decile calibration table** comparing the mean predicted probability with the observed churn rate.
+
+An expected-value decision is only as good as the score's calibration, so these numbers are reported alongside the optimisation.
+
+## 8. Budget frontier
+
+The optimal ENB is solved for a ladder of budgets. The marginal return per extra euro, ΔENB / ΔB, is non-increasing. The budget should be set where this marginal return reaches the business's hurdle rate.
+
+## 9. What a production version needs
 
 1. A calibrated churn model, checked with a reliability curve and the Brier score.
 2. A margin-based, discounted CLV.

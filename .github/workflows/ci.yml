@@ -26,5 +26,7 @@ jobs:
           ruff format --check src tests scripts
       - name: Test
         run: pytest -q
+        env:
+          MPLBACKEND: Agg
       - name: Smoke-run the CLI
         run: python -m odin analyze --runs 500 --no-figures --out /tmp/odin
