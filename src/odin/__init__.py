@@ -20,6 +20,7 @@ from odin.strategies import (
     random_selection,
     value_density_selection,
 )
+from odin.uplift import TLearner, add_uplift_value, qini_coefficient, qini_curve
 
 __version__ = "1.0.0"
 
@@ -29,11 +30,13 @@ __all__ = [
     "DEFAULT_CATALOGUE",
     "REQUIRED_COLUMNS",
     "STRATEGIES",
+    "TLearner",
     "DataValidationError",
     "Offer",
     "ScenarioConfig",
     "__version__",
     "add_expected_value",
+    "add_uplift_value",
     "brute_force_selection",
     "build_offer_menu",
     "churn_ranked_selection",
@@ -43,6 +46,8 @@ __all__ = [
     "knapsack_selection",
     "load_customers",
     "multi_offer_selection",
+    "qini_coefficient",
+    "qini_curve",
     "random_selection",
     "validate_customers",
     "value_density_selection",

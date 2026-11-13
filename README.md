@@ -219,6 +219,7 @@ churn-retention-optimizer/
 │   ├── strategies.py    # random, risk-first, greedy, knapsack DP, brute force
 │   ├── offers.py        # offer catalogue and multiple-choice knapsack
 │   ├── constraints.py   # contact capacity and segment quotas (integer programme)
+│   ├── uplift.py        # randomised-experiment simulation, T-learner, Qini
 │   ├── evaluation.py    # metrics, optimality gap, score diagnostics, segment allocation
 │   ├── sensitivity.py   # one-way, two-way grid, portfolio stability
 │   ├── simulation.py    # Monte Carlo risk
@@ -271,7 +272,7 @@ Full detail: [`docs/methodology.md`](docs/methodology.md).
 
 ## Roadmap
 
-- [ ] Uplift modelling: per-subscriber treatment effects instead of a single success rate
+- [x] Uplift modelling: per-subscriber treatment effects instead of a single success rate: `odin.uplift`
 - [x] Several offer types per subscriber (multiple-choice knapsack): `odin.offers`
 - [x] Contact-capacity and segment-quota constraints (integer programme with HiGHS): `odin.constraints`
 - [ ] Interactive scenario explorer (Streamlit)
