@@ -198,6 +198,12 @@ knapsack_selection(customers, budget=500)
 # ['C001', 'C004', 'C007', 'C021', 'C024', 'C030']
 ```
 
+```bash
+# Interactive scenario explorer
+pip install -e ".[app]"
+streamlit run app/streamlit_app.py
+```
+
 `make all` runs lint, tests, both analyses, the benchmark and the report notebook end to end.
 
 ---
@@ -206,6 +212,7 @@ knapsack_selection(customers, budget=500)
 
 ```text
 churn-retention-optimizer/
+├── app/streamlit_app.py            # interactive scenario explorer
 ├── notebooks/
 │   └── Project_Odin_Report.ipynb       # client-style decision analytics report
 ├── data/
@@ -275,7 +282,7 @@ Full detail: [`docs/methodology.md`](docs/methodology.md).
 - [x] Uplift modelling: per-subscriber treatment effects instead of a single success rate: `odin.uplift`
 - [x] Several offer types per subscriber (multiple-choice knapsack): `odin.offers`
 - [x] Contact-capacity and segment-quota constraints (integer programme with HiGHS): `odin.constraints`
-- [ ] Interactive scenario explorer (Streamlit)
+- [x] Interactive scenario explorer (Streamlit): `app/streamlit_app.py`
 
 ---
 
