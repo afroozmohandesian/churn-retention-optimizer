@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-pytest.importorskip("streamlit")
+pytest.importorskip("streamlit", minversion="1.36")
 from streamlit.testing.v1 import AppTest  # noqa: E402
 
 APP = str(Path(__file__).resolve().parents[1] / "app" / "streamlit_app.py")
