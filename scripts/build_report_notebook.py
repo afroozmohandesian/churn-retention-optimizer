@@ -38,7 +38,7 @@ md(r"""
 | **Engagement** | Allocation of the retention-campaign budget across at-risk subscribers |
 | **Business question** | *With a fixed budget, which subscribers should receive a retention offer to maximise expected net financial benefit?* |
 | **Deliverables** | This report · the reusable `odin` optimisation package · exported tables and charts |
-| **Version** | 2.0, November 2026 |
+| **Version** | 2.1, November 2026 |
 | **Data classification** | Synthetic replica. Contains **no real customer data**. |
 
 ---
@@ -62,6 +62,7 @@ md(r"""
 3. **Targeting quality matters more as margins thin.** On the full base, random targeting barely breaks even (a 36% chance of a loss), while the optimised campaign is profitable in all 20,000 simulated scenarios.
 4. **Budget has diminishing returns.** At €25k, the next euro of budget returns about **€0.59** of net benefit, down from €1.05 at €10k. This gives a clear basis for sizing future budgets.
 5. **Where the budget goes:** monthly-contract subscribers, Basic and Standard plans, and paid-search and partner-bundle acquisitions. These are high-churn segments with affordable offers.
+6. **The next gains come from better decisions, not a bigger budget.** Choosing the offer per subscriber adds about 23%, and per-subscriber uplift from a randomised test changes the answer more than anything else (Part C).
 
 ---
 
@@ -74,6 +75,7 @@ md(r"""
 | 3. Setup | Configuration and assumptions in one place |
 | **Part A: Pilot cohort** (30 high-value accounts) | Does optimisation beat the current rule, and is the answer provably optimal and robust? |
 | **Part B: Full subscriber base** (5,000 accounts) | What drives churn, how good is the score, and where should a €25k budget go? |
+| **Part C: Beyond the base model** | What if offers vary, capacity is limited, or subscribers respond differently? |
 | 4. Recommendations | What should the client do next? |
 | 5. Limitations | What the analysis can and cannot claim |
 | Appendix | Reproducibility and exported artefacts |
@@ -577,6 +579,148 @@ md(r"""
 With hundreds of offers, outcomes average out: the optimised campaign is **profitable in every simulated scenario**, and in 95% of scenarios it returns at least about €18,000. Random targeting loses money in more than a third of scenarios. The retrospective churn-capture figures in B5 are descriptive only. Proving causal impact requires a randomised hold-out group (see Section 4).
 """)
 
+
+# ================================================================ PART C
+md(r"""
+---
+# Part C: Beyond the base model
+
+Part B assumed one offer per subscriber, a single budget limit and the same 50% success rate for everyone. Part C relaxes each assumption on the full base, with the same €25,000 budget.
+""")
+
+md("## C1. Choosing the offer per subscriber")
+code(r"""
+from odin.offers import DEFAULT_CATALOGUE, build_offer_menu, compare_offer_policies, multi_offer_selection, offer_mix
+
+catalogue = pd.DataFrame([{"Offer": o.name, "Assumed success rate": o.success_rate,
+                           "Free months": o.cost_months, "Handling (€)": o.fixed_cost,
+                           "Monthly contracts only": o.monthly_only} for o in DEFAULT_CATALOGUE])
+display(catalogue.style.format({"Assumed success rate": "{:.0%}", "Free months": "{:g}",
+                                "Handling (€)": "€{:,.0f}"}).hide(axis="index"))
+
+menu = build_offer_menu(base_raw)
+policies = compare_offer_policies(menu, BASE_BUDGET)
+mckp = multi_offer_selection(menu, BASE_BUDGET)
+mix = offer_mix(mckp)
+display(policies.style.format({"Subscribers Targeted": "{:,.0f}", "Total Spending (€)": "€{:,.0f}",
+                               "Expected Net Benefit (€)": "€{:,.0f}"}))
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 4.8), gridspec_kw={"width_ratios": [1.4, 1]})
+vals = policies["Expected Net Benefit (€)"].sort_values()
+bars = ax1.barh(vals.index, vals.values, color=[ACCENT if "MCKP" in i else MUTED for i in vals.index])
+ax1.bar_label(bars, [euro(v) for v in vals.values], padding=3)
+ax1.set_xlim(0, vals.max() * 1.18); ax1.set_xlabel("Expected net benefit (€)")
+ax1.xaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: euro(v)))
+ax1.set_title("Policy comparison")
+ax2.pie(mix["Spend"], labels=[f"{o}\n{n:,} subscribers" for o, n in zip(mix.index, mix["Subscribers"])],
+        colors=["#3D5A80", "#98C1D9", "#E0FBFC", "#EE6C4D"][: len(mix)], startangle=90,
+        wedgeprops={"edgecolor": "white"}, autopct="%1.0f%%", pctdistance=0.75)
+ax2.set_title("How the optimal budget is split by offer")
+fig.suptitle(f"C1. Best offer per subscriber ({euro(BASE_BUDGET)} budget)", fontweight="bold", y=1.03)
+save(fig, "C1_offer_choice.png")
+
+best_single = policies.drop(index="Best offer per subscriber (MCKP)")["Expected Net Benefit (€)"].max()
+display(Markdown(f"**Choosing the offer per subscriber adds {euro(mckp['Offer_Net_Benefit'].sum() - best_single)} "
+                 f"(+{mckp['Offer_Net_Benefit'].sum() / best_single - 1:.0%}) over the best one-size-fits-all policy "
+                 f"and reaches {len(mckp):,} subscribers.**"))
+""")
+md(r"""
+Most subscribers get the cheap loyalty email, and the free months go where the value at risk justifies them. The annual-plan discount is rarely worth its cost. This is a **multiple-choice knapsack**, solved exactly by dynamic programming and verified against exhaustive search in the test suite.
+""")
+
+md("## C2. What do operational limits cost?")
+code(r"""
+from odin.constraints import CampaignConstraints, shadow_cost
+
+regions = base_raw.set_index("Customer_ID")["Region"]
+capacity_levels = [500, 1_000, 1_500, 2_000, 2_500, 3_000]
+capacity = pd.DataFrame([{"Maximum contacts": k, **shadow_cost(menu, BASE_BUDGET, CampaignConstraints(max_contacts=k))}
+                         for k in capacity_levels])
+quota_rules = {
+    "DACH at most 25% of spend": CampaignConstraints(segment_column="Region", max_spend_share={"DACH": 0.25}),
+    "Nordics at least 300 contacts": CampaignConstraints(segment_column="Region", min_contacts={"Nordics": 300}),
+    "All three (incl. 1,500 contacts)": CampaignConstraints(max_contacts=1_500, segment_column="Region",
+                                                           max_spend_share={"DACH": 0.25},
+                                                           min_contacts={"Nordics": 300}),
+}
+quotas = pd.DataFrame({k: shadow_cost(menu, BASE_BUDGET, v, regions) for k, v in quota_rules.items()}).T
+display(quotas.style.format({c: "€{:,.0f}" for c in quotas.columns if "€" in c} | {"Share Retained": "{:.1%}"}))
+
+fig, ax = plt.subplots()
+ax.plot(capacity["Maximum contacts"], capacity["Constrained (€)"] / 1000, marker="o", color=ACCENT, lw=2,
+        label="With contact limit")
+ax.axhline(capacity["Unconstrained (€)"].iloc[0] / 1000, color=MUTED, ls="--", label="No contact limit")
+for _, r in capacity.iterrows():
+    ax.annotate(f"{r['Share Retained']:.0%}", (r["Maximum contacts"], r["Constrained (€)"] / 1000),
+                textcoords="offset points", xytext=(0, -16), ha="center", fontsize=9)
+ax.set_xlabel("Maximum number of contacts in the campaign")
+ax.set_ylabel("Optimal expected net benefit (€ thousand)")
+ax.set_ylim(capacity["Constrained (€)"].min() / 1000 * 0.93, None)
+ax.set_title("C2. The price of call-centre capacity"); ax.legend(frameon=False, loc="lower right")
+save(fig, "C2_contact_capacity.png")
+""")
+md(r"""
+With several constraints the problem is a general 0/1 integer programme, solved exactly with HiGHS. **Contact capacity is the constraint that matters:** below about 1,500 contacts the campaign gives up noticeable value, so extra call-centre capacity has a measurable price. Regional quotas cost almost nothing, so they can be adopted for strategic reasons.
+""")
+
+md("## C3. Who actually responds? Uplift modelling")
+code(r"""
+from odin.uplift import (TLearner, add_uplift_value, qini_coefficient, qini_curve, realised_value,
+                         simulate_campaign_experiment, true_uplift)
+from odin.synthetic import generate_customer_base
+
+warnings.filterwarnings("ignore")
+cohort = generate_customer_base(20_000, seed=101)            # a past campaign, run as a randomised test
+experiment = simulate_campaign_experiment(cohort, seed=1)
+model = TLearner().fit(experiment)
+
+est = model.predict(base_raw)
+truth = true_uplift(base_raw)
+holdout = simulate_campaign_experiment(base_raw, seed=2)
+curves = {
+    "Churn score": qini_curve(base_raw["Predicted_Churn_Probability"], holdout["Treatment"], holdout["Churned"]),
+    "Uplift model": qini_curve(model.predict(holdout), holdout["Treatment"], holdout["Churned"]),
+    "True uplift (oracle)": qini_curve(truth, holdout["Treatment"], holdout["Churned"]),
+}
+constant = add_expected_value(base_raw, SUCCESS_RATE)
+portfolios = {
+    "Highest churn probability": base_sel["Highest Churn Probability"],
+    "Knapsack, constant 50% rate": knapsack_selection(constant, BASE_BUDGET),
+    "Knapsack, uplift model": knapsack_selection(add_uplift_value(base_raw, est), BASE_BUDGET),
+    "Knapsack, true uplift (oracle)": knapsack_selection(add_uplift_value(base_raw, truth), BASE_BUDGET),
+}
+uplift_cmp = pd.DataFrame({k: realised_value(base_raw, v, truth) for k, v in portfolios.items()}).T
+display(uplift_cmp.style.format({"Selected Customers": "{:,.0f}", "Total Spending (€)": "€{:,.0f}",
+                                 "True Retained Value (€)": "€{:,.0f}", "True Net Benefit (€)": "€{:,.0f}",
+                                 "Expected Churns Prevented": "{:,.0f}"}))
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 5), gridspec_kw={"wspace": 0.6})
+for (name, curve), color in zip(curves.items(), ["#E07A5F", ACCENT, MUTED]):
+    ax1.plot(curve["Share_Targeted"] * 100, curve["Incremental_Saves"], color=color, lw=2,
+             ls="--" if "oracle" in name else "-", label=f"{name} (Qini {qini_coefficient(curve):.0f})")
+end = curves["Churn score"]["Incremental_Saves"].iloc[-1]
+ax1.plot([0, 100], [0, end], color="black", lw=1, ls=":", label="Random targeting")
+ax1.set_xlabel("% of subscribers targeted (highest score first)"); ax1.set_ylabel("Churns prevented (hold-out test)")
+ax1.set_title("Qini curves"); ax1.legend(frameon=False, fontsize=9)
+vals = uplift_cmp["True Net Benefit (€)"]
+bars = ax2.barh(vals.index, vals.values, color=["#E07A5F", MUTED, ACCENT, "#98C1D9"])
+ax2.bar_label(bars, [euro(v) for v in vals.values], padding=3); ax2.invert_yaxis()
+ax2.set_xlim(0, vals.max() * 1.22); ax2.set_xlabel("Net benefit under the true offer effect (€)")
+ax2.xaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: euro(v)))
+ax2.set_title("Portfolios scored against the true effect")
+fig.suptitle("C3. Uplift modelling: targeting the subscribers the offer actually changes", fontweight="bold", y=1.03)
+save(fig, "C3_uplift.png")
+print(f"Correlation of estimated with true uplift: {np.corrcoef(est, truth)[0, 1]:.2f}")
+""")
+md(r"""
+The offer does not work equally well for everyone. In this simulated world monthly subscribers and new joiners are persuadable, subscribers with payment failures leave whatever happens, and a small group of heavy viewers with open support tickets reacts *badly* to being contacted.
+
+* A **T-learner** (one churn model for offered and one for held-out subscribers) trained on a randomised past campaign recovers each subscriber's uplift with a correlation of about 0.96. Its Qini curve almost matches the oracle's, and it ranks subscribers far better than the churn score.
+* **The warning:** when the effect varies, a knapsack fed a single assumed success rate optimises the wrong quantity. Here it does *worse* than the risk-first rule. The uplift-based portfolio recovers about 94% of the oracle's value.
+
+This is the quantitative case for Recommendation 3: **a randomised hold-out is worth more than any further refinement of the optimiser.** The true effect here is defined by the synthetic generator, so the figures demonstrate the method, not a measured outcome.
+""")
+
 # ---------------------------------------------------------------- 4/5
 md(r"""
 ---
@@ -584,9 +728,10 @@ md(r"""
 
 1. **Replace the risk-first targeting rule with value-based optimisation.** Under the stated assumptions this adds about €3,000 (+15%) of expected net benefit per €25k campaign, with no increase in spend.
 2. **Focus offers where risk, value and offer cost line up:** monthly contracts, Basic and Standard plans, and paid-search and partner-bundle acquisitions. **Redesign the Premium offer**: at its current cost it rarely pays back.
-3. **Run the next campaign as a randomised test.** Hold out a random 10–20% of the selected subscribers. Comparing churn between treated and held-out subscribers measures the true offer success rate, the single most important assumption. Feed that estimate back into the model.
-4. **Set the budget using the frontier (B7).** Fund the campaign up to the point where the marginal return per euro falls to the client's hurdle rate.
-5. **Operationalise.** The `odin` package exposes the full pipeline (`python -m odin analyze`), so the list can be refreshed every cycle from the latest churn scores.
+3. **Run the next campaign as a randomised test.** Hold out a random 10–20% of the selected subscribers. Comparing churn between treated and held-out subscribers measures the true offer effect, the single most important assumption. Part C shows that per-subscriber uplift estimated from such a test can be worth far more than further optimisation.
+4. **Let the model choose the offer, and price capacity.** Choosing the offer per subscriber adds about a quarter to expected net benefit (C1). Contact capacity is the operational limit worth relaxing; regional quotas are nearly free (C2).
+5. **Set the budget using the frontier (B7).** Fund the campaign up to the point where the marginal return per euro falls to the client's hurdle rate.
+6. **Operationalise.** The `odin` package exposes the full pipeline (`python -m odin analyze`), so the list can be refreshed every cycle from the latest churn scores.
 
 # 5. Limitations
 
@@ -594,7 +739,7 @@ md(r"""
 * **Assumed offer effectiveness.** The 50% success rate is a scenario input, which is why the report stress-tests it from 10% to 95%.
 * **Simplified economics.** CLV is margin-based but undiscounted. Partial retention, offer-specific effects and cannibalisation are not modelled.
 * **No causal claim.** Observed churn among selected subscribers is descriptive. Causal impact requires the experiment in recommendation 3.
-* **Single offer per subscriber.** Multiple offer types per subscriber, contact-capacity limits and segment quotas would turn the problem into a general integer program. The roadmap in the README covers this.
+* **Simulated treatment effects.** Part C estimates uplift from a *simulated* randomised campaign. In production it needs a real hold-out experiment.
 """)
 
 # ---------------------------------------------------------------- appendix
@@ -619,6 +764,11 @@ exports = {
     "base_budget_frontier.csv": frontier,
     "base_monte_carlo_risk.csv": base_risk,
     "base_score_calibration.csv": calib,
+    "ext_offer_policies.csv": policies,
+    "ext_offer_mix.csv": mix,
+    "ext_contact_capacity.csv": capacity,
+    "ext_segment_quotas.csv": quotas,
+    "ext_uplift_portfolios.csv": uplift_cmp,
 }
 for name, table in exports.items():
     table.to_csv(ROOT / TAB / name, index=not isinstance(table.index, pd.RangeIndex))

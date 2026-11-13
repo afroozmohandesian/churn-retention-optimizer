@@ -170,7 +170,7 @@ The recommended accounts are **C001, C004, C007, C021, C024, C030**. Greedy matc
 
 ## Extensions
 
-Three extensions relax the base model's simplifications. All results are for the 5,000-subscriber base with a €25,000 budget and can be reproduced with `python scripts/extensions.py`, which writes the tables to `outputs/extensions/`.
+Three extensions relax the base model's simplifications. They are presented in full in Part C of the report notebook. All results are for the 5,000-subscriber base with a €25,000 budget and can be reproduced with `python scripts/extensions.py`, which writes the tables to `outputs/extensions/`.
 
 ### Several offer types per subscriber
 
@@ -184,6 +184,8 @@ The retention team can choose between a loyalty email, one or two free months, a
 | **Best offer per subscriber** | **3,004** | **€33,875 (+23%)** |
 
 Choosing the offer per subscriber reaches 3.7 times as many people for the same budget. Most of them get the cheap email, and the free months go to the accounts where they pay back.
+
+<p align="center"><img src="outputs/report/figures/C1_offer_choice.png" width="90%" alt="Policy comparison and offer mix"></p>
 
 ### Contact capacity and segment quotas
 
@@ -199,6 +201,8 @@ Operational limits turn the problem into a general 0/1 integer programme, solved
 
 Contact capacity is the binding limit. Regional quotas are almost free, so they can be adopted for strategic reasons at little cost.
 
+<p align="center"><img src="outputs/report/figures/C2_contact_capacity.png" width="70%" alt="Expected net benefit by contact capacity"></p>
+
 ### Uplift modelling
 
 A single success rate assumes every subscriber responds to the offer in the same way. `odin.uplift` simulates a randomised hold-out campaign in which the true effect varies (persuadable subscribers, lost causes with payment failures, and "sleeping dogs" who react badly). It then fits a **T-learner** to estimate each subscriber's uplift and feeds `uplift × CLV − cost` into the knapsack.
@@ -211,6 +215,8 @@ A single success rate assumes every subscriber responds to the offer in the same
 | Knapsack, true uplift (oracle) | €15,219 | 269 |
 
 The estimated uplift correlates 0.96 with the truth, and its Qini coefficient (65.5) is close to the oracle's (66.2), well above ranking by churn score (47.8). The main lesson is a warning: **an optimiser built on the wrong effect assumption can do worse than the simple rule it replaces.** In this simulated world the constant-rate knapsack loses to risk-first targeting. The uplift-based portfolio recovers 94% of the oracle's value. This is the quantitative case for the randomised hold-out in Recommendation 3.
+
+<p align="center"><img src="outputs/report/figures/C3_uplift.png" width="90%" alt="Qini curves and portfolios under the true effect"></p>
 
 <sub>The true effect is defined by the synthetic generator, so these figures show the method rather than measured outcomes.</sub>
 
