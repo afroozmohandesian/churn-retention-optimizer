@@ -7,6 +7,7 @@ combination of customers that maximises total benefit under a fixed budget
 """
 
 from odin.config import ScenarioConfig
+from odin.constraints import CampaignConstraints, InfeasibleCampaignError, constrained_selection
 from odin.data import REQUIRED_COLUMNS, DataValidationError, load_customers, validate_customers
 from odin.economics import add_expected_value
 from odin.evaluation import compare_strategies, evaluate_selection
@@ -23,6 +24,8 @@ from odin.strategies import (
 __version__ = "1.0.0"
 
 __all__ = [
+    "CampaignConstraints",
+    "InfeasibleCampaignError",
     "DEFAULT_CATALOGUE",
     "REQUIRED_COLUMNS",
     "STRATEGIES",
@@ -35,6 +38,7 @@ __all__ = [
     "build_offer_menu",
     "churn_ranked_selection",
     "compare_strategies",
+    "constrained_selection",
     "evaluate_selection",
     "knapsack_selection",
     "load_customers",
