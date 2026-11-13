@@ -22,10 +22,13 @@ app:
 benchmark:
 	python scripts/benchmark.py
 
+extensions:
+	python scripts/extensions.py
+
 notebook:
 	python scripts/build_report_notebook.py
 	cd notebooks && jupyter nbconvert --to notebook --execute --inplace Project_Odin_Report.ipynb
 
-all: lint test analyze synthetic benchmark notebook
+all: lint test analyze synthetic benchmark extensions notebook
 
-.PHONY: install test lint analyze synthetic app benchmark notebook all
+.PHONY: install test lint analyze synthetic app benchmark extensions notebook all

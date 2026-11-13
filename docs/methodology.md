@@ -87,6 +87,40 @@ The optimal ENB is solved for a ladder of budgets. The marginal return per extra
 
 1. A calibrated churn model, checked with a reliability curve and the Brier score.
 2. A margin-based, discounted CLV.
-3. Per-customer **uplift** (heterogeneous treatment effect) from randomised experiments, replacing the single `r`.
-4. Operational constraints such as contact capacity, eligibility and fairness. These turn the problem into a general integer linear program.
+3. Per-customer **uplift** (heterogeneous treatment effect) from randomised experiments, replacing the single `r` (prototype in section 12).
+4. Operational constraints such as contact capacity, eligibility and fairness. These turn the problem into a general integer linear program (section 11).
 5. Post-campaign monitoring that compares predicted and realised outcomes.
+
+## 10. Several offer types (multiple-choice knapsack)
+
+Each subscriber *i* can receive at most one offer *j* from a catalogue with cost `C_ij` and success rate `r_j`:
+
+```
+max  Σ_ij x_ij · ENB_ij      ENB_ij = P_i · CLV_i · r_j − C_ij
+s.t. Σ_ij x_ij · C_ij ≤ B
+     Σ_j  x_ij ≤ 1           for every i
+     x_ij ∈ {0, 1}
+```
+
+`odin.offers.multi_offer_selection` solves it exactly by dynamic programming over the budget. Each subscriber is a group, and the DP takes the best of "no offer" and each offer at every budget level, in `O(n · k · B)`. It is verified against exhaustive search, and with a single offer it reduces to the 0/1 knapsack.
+
+## 11. Operational constraints (integer programme)
+
+`odin.constraints.constrained_selection` adds limits that the DP cannot handle:
+
+- a maximum number of contacts, `Σ x_ij ≤ K`;
+- a spend cap per segment, `Σ_{i∈s} x_ij · C_ij ≤ share_s · B`;
+- a minimum number of contacts per segment, `Σ_{i∈s} x_ij ≥ m_s`.
+
+The model is solved with HiGHS branch-and-cut through `scipy.optimize.milp`, with a relative optimality gap of 1e-6. Without extra constraints it reproduces both DP optima. `shadow_cost` compares the constrained and unconstrained optima to price each limit. Offers with negative net benefit are kept as candidates only when a minimum contact quota could require them.
+
+## 12. Uplift modelling
+
+Uplift is the churn probability the offer removes, `τ_i = P(churn | no offer, x_i) − P(churn | offer, x_i)`. It replaces `P_i · r` in the economics: `ENB_i = τ_i · CLV_i − C_i`.
+
+- **Experiment.** `simulate_campaign_experiment` assigns the offer at random and draws churn from the baseline risk, multiplied by `1 − effect_i` when treated. The true effect depends on contract, tenure, plan, payment failures and a "sleeping dog" segment, and lies between −0.3 and 0.85 of the baseline risk.
+- **Estimator.** A T-learner fits one spline logistic regression per arm and takes `τ̂_i = p̂_control − p̂_treated`. It is trained on a separate simulated cohort of 20,000 subscribers.
+- **Evaluation.** The Qini curve plots cumulative incremental saves when subscribers are targeted in order of predicted uplift. The Qini coefficient is the area between that curve and random targeting. Because the data is synthetic, portfolios are also scored against the true effect (`realised_value`).
+
+In production the experiment would be a real randomised hold-out, and the T-learner could be replaced by an X-learner or causal forest once enough treated subscribers are observed.
+

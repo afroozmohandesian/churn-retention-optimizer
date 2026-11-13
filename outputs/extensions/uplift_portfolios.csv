@@ -1,0 +1,5 @@
+Portfolio,Selected Customers,Total Spending (€),True Retained Value (€),True Net Benefit (€),Expected Churns Prevented
+Highest churn probability,843.0,24995.0,26905.378676,1910.3786760000003,179.31748
+"Knapsack, constant 50% rate",841.0,25000.0,25854.195603999997,854.1956039999968,151.08179199999998
+"Knapsack, uplift model",1020.0,25000.0,39278.999114,14278.999113999998,266.684926
+"Knapsack, true uplift (oracle)",1005.0,25000.0,40219.321332,15219.321332,268.578986

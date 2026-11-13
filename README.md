@@ -10,7 +10,7 @@ Project Odin replaces "contact the riskiest customers first" with a provably opt
 [![CI](https://github.com/afroozmohandesian/churn-retention-optimizer/actions/workflows/ci.yml/badge.svg)](https://github.com/afroozmohandesian/churn-retention-optimizer/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![pandas](https://img.shields.io/badge/pandas-2.x-150458?logo=pandas&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-67%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-99%20passing-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 </div>
@@ -26,6 +26,7 @@ Project Odin replaces "contact the riskiest customers first" with a provably opt
 - [Approach](#approach)
 - [Findings](#findings)
 - [Recommendations](#recommendations)
+- [Extensions](#extensions)
 - [Quick start](#quick-start)
 - [Repository structure](#repository-structure)
 - [Data](#data)
@@ -167,6 +168,63 @@ The recommended accounts are **C001, C004, C007, C021, C024, C030**. Greedy matc
 
 ---
 
+## Extensions
+
+Three extensions relax the base model's simplifications. All results are for the 5,000-subscriber base with a €25,000 budget and can be reproduced with `python scripts/extensions.py`, which writes the tables to `outputs/extensions/`.
+
+### Several offer types per subscriber
+
+The retention team can choose between a loyalty email, one or two free months, and an annual-plan discount for monthly subscribers. Each subscriber gets at most one offer, so this is a **multiple-choice knapsack**, also solved exactly by dynamic programming (`odin.offers`).
+
+| Policy | Subscribers | Expected net benefit |
+|---|---:|---:|
+| Everyone gets a loyalty email | 4,305 | €18,947 |
+| Everyone gets one free month | 1,500 | €27,441 |
+| Everyone gets two free months | 820 | €26,869 |
+| **Best offer per subscriber** | **3,004** | **€33,875 (+23%)** |
+
+Choosing the offer per subscriber reaches 3.7 times as many people for the same budget. Most of them get the cheap email, and the free months go to the accounts where they pay back.
+
+### Contact capacity and segment quotas
+
+Operational limits turn the problem into a general 0/1 integer programme, solved exactly with HiGHS (`odin.constraints`). `shadow_cost` reports what each limit costs:
+
+| Constraint | Expected net benefit | Cost of the constraint |
+|---|---:|---:|
+| None | €33,875 | – |
+| At most 1,500 contacts | €31,465 | €2,410 (7.1%) |
+| DACH at most 25% of spend | €33,739 | €136 (0.4%) |
+| Nordics at least 300 contacts | €33,875 | €0 (already met) |
+| All three together | €31,240 | €2,635 (7.8%) |
+
+Contact capacity is the binding limit. Regional quotas are almost free, so they can be adopted for strategic reasons at little cost.
+
+### Uplift modelling
+
+A single success rate assumes every subscriber responds to the offer in the same way. `odin.uplift` simulates a randomised hold-out campaign in which the true effect varies (persuadable subscribers, lost causes with payment failures, and "sleeping dogs" who react badly). It then fits a **T-learner** to estimate each subscriber's uplift and feeds `uplift × CLV − cost` into the knapsack.
+
+| Portfolio | True net benefit | Churns prevented |
+|---|---:|---:|
+| Highest churn probability | €1,910 | 179 |
+| Knapsack, constant 50% rate | €854 | 151 |
+| **Knapsack, uplift model** | **€14,279** | **267** |
+| Knapsack, true uplift (oracle) | €15,219 | 269 |
+
+The estimated uplift correlates 0.96 with the truth, and its Qini coefficient (65.5) is close to the oracle's (66.2), well above ranking by churn score (47.8). The main lesson is a warning: **an optimiser built on the wrong effect assumption can do worse than the simple rule it replaces.** In this simulated world the constant-rate knapsack loses to risk-first targeting. The uplift-based portfolio recovers 94% of the oracle's value. This is the quantitative case for the randomised hold-out in Recommendation 3.
+
+<sub>The true effect is defined by the synthetic generator, so these figures show the method rather than measured outcomes.</sub>
+
+### Interactive scenario explorer
+
+`app/streamlit_app.py` combines all of the above. You can change the dataset, budget, offer-effect assumption, offer catalogue and constraints, and see the optimal portfolio, its segment allocation, the budget frontier and a downloadable target list.
+
+```bash
+pip install -e ".[app]"
+streamlit run app/streamlit_app.py
+```
+
+---
+
 ## Quick start
 
 ```bash
@@ -234,11 +292,13 @@ churn-retention-optimizer/
 │   ├── plots.py · pipeline.py · cli.py
 ├── scripts/
 │   ├── benchmark.py                # heuristic gap and solver runtime
+│   ├── extensions.py               # multi-offer, constraint and uplift results
 │   └── build_report_notebook.py    # report notebook kept as reviewable source
-├── tests/                          # 67 pytest tests
+├── tests/                          # 99 pytest tests
 ├── outputs/
 │   ├── report/                     # figures and tables from the report notebook
 │   ├── customer_base_5000/         # CLI run on the full base
+│   ├── extensions/                 # tables from scripts/extensions.py
 │   └── figures/ tables/ summary.txt# CLI run on the pilot
 ├── docs/methodology.md
 └── .github/workflows/ci.yml        # lint and tests on Python 3.10–3.12
@@ -259,7 +319,7 @@ The full-base churn score is generated from the behavioural drivers **with model
 
 ## Quality assurance
 
-- **67 tests** (`pytest`), lint and format checks (`ruff`), and CI on Python 3.10, 3.11 and 3.12.
+- **99 tests** (`pytest`), lint and format checks (`ruff`), and CI on Python 3.10, 3.11 and 3.12.
 - The DP solver is checked against **exhaustive search** on 25 random instances, plus a counter-example where greedy is sub-optimal.
 - Budget feasibility, **monotone sensitivity**, **Monte Carlo convergence** to the analytical expectation, data-validation rules and the CLI end to end are all tested.
 - The report notebook is generated from [`scripts/build_report_notebook.py`](scripts/build_report_notebook.py) and calls the same package as the CLI, so the numbers always agree.
@@ -269,7 +329,7 @@ The full-base churn score is generated from the behavioural drivers **with model
 ## Limitations
 
 - **Synthetic data and a fictional client.** The results demonstrate the method. They are not measured business outcomes.
-- **Assumed offer effectiveness.** The 50% success rate is stress-tested from 10% to 95% but is not estimated from data.
+- **Assumed offer effectiveness.** The 50% success rate is stress-tested from 10% to 95% but is not estimated from data. The uplift extension shows how to estimate it, but on a simulated experiment.
 - **Simplified economics.** CLV is undiscounted, and partial retention and cannibalisation are not modelled.
 - **No causal claim.** Causal impact requires a randomised hold-out (Recommendation 3).
 

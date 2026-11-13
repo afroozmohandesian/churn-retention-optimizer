@@ -1,0 +1,5 @@
+,Value
+Correlation with true uplift,0.9558270072595747
+Qini: churn score,47.833059617881894
+Qini: uplift model,65.53118036077049
+Qini: true uplift (oracle),66.1975088365368

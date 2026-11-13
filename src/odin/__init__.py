@@ -22,7 +22,7 @@ from odin.strategies import (
 )
 from odin.uplift import TLearner, add_uplift_value, qini_coefficient, qini_curve
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 __all__ = [
     "CampaignConstraints",
